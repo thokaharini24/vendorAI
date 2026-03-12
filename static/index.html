@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VendorAI</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family: Arial, sans-serif; background:#f0f4f8; }
+
+        .header {
+            background: linear-gradient(135deg, #2d6a4f, #40916c);
+            color: white; padding: 25px; text-align: center;
+        }
+        .header h1 { font-size: 28px; font-weight: bold; }
+        .header p { font-size: 14px; opacity: 0.85; margin-top: 5px; }
+
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+
+        .card {
+            background: white; border-radius: 14px;
+            padding: 20px; margin-bottom: 18px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+        .card h2 { color: #2d6a4f; margin-bottom: 14px; font-size: 17px; }
+
+        select, textarea {
+            width: 100%; padding: 12px;
+            border: 2px solid #ddd; border-radius: 8px;
+            font-size: 15px; background: white;
+            font-family: Arial, sans-serif;
+        }
+        textarea { 
+            height: 100px; resize: vertical; 
+            margin-top: 10px;
+        }
+
+        .mic-btn {
+            width: 80px; height: 80px;
+            border-radius: 50%; border: none;
+            background: #2d6a4f; color: white;
+            font-size: 30px; cursor: pointer;
+            display: block; margin: 0 auto 10px;
+            box-shadow: 0 4px 15px rgba(45,106,79,0.4);
+        }
+        .mic-btn.listening {
+            background: #e63946;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0%,100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .status {
+            text-align: center; color: #666;
+            font-size: 14px; margin-bottom: 5px;
+        }
+
+        .transcript-box {
+            background: #f0fff4; border: 1px solid #95d5b2;
+            border-radius: 8px; padding: 10px;
+            font-size: 14px; color: #2d6a4f;
+            margin-top: 10px; display: none;
+        }
+
+        .gen-btn {
+            width: 100%; padding: 16px;
+            background: linear-gradient(135deg, #f4a261, #e76f51);
+            color: white; border: none; border-radius: 10px;
+            font-size: 18px; cursor: pointer; font-weight: bold;
+        }
+        .gen-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+        .spinner-wrap {
+            display: none; text-align: center; padding: 20px;
+        }
+        .spinner {
+            border: 4px solid #eee; border-top: 4px solid #2d6a4f;
+            border-radius: 50%; width: 45px; height: 45px;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 12px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #results{
+    display:none;
+    opacity:0;
+}
+
+.reset-btn{
+    width:100%;
+    padding:15px;
+    margin-top:15px;
+    background:linear-gradient(135deg,#f4a261,#e76f51);
+    border:none;
+    border-radius:10px;
+    color:white;
+    font-size:16px;
+    font-weight:bold;
+    cursor:pointer;
+    transition:0.2s;
+}
+
+.reset-btn:hover{
+    transform:scale(1.02);
+}
+.success-banner{
+    background:#d8f3dc;
+    color:#2d6a4f;
+    padding:12px;
+    border-radius:8px;
+    margin-bottom:15px;
+    font-weight:bold;
+    text-align:center;
+}
+
+
+        .result-card {
+            background: white; border-radius: 14px;
+            padding: 20px; margin-bottom: 18px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            animation: fadeIn 0.5s ease;
+        }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; } }
+
+        .result-card h3 {
+            padding: 8px 14px; border-radius: 8px;
+            color: white; font-size: 15px; margin-bottom: 14px;
+        }
+        .green-header { background: #2d6a4f; }
+        .blue-header { background: #457b9d; }
+        .purple-header { background: #7b2d8b; }
+
+        .result-label {
+            font-size: 12px; font-weight: bold;
+            color: #666; text-transform: uppercase;
+            margin: 10px 0 4px; letter-spacing: 0.5px;
+        }
+        .result-box {
+            background: #f8f9fa; border: 1px solid #eee;
+            border-radius: 8px; padding: 12px;
+            font-size: 14px; line-height: 1.7;
+            white-space: pre-wrap; color: #333;
+        }
+        .hashtag-box { color: #457b9d; font-size: 13px; }
+
+        .btn-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+        .copy-btn {
+            padding: 8px 14px; background: #2d6a4f;
+            color: white; border: none; border-radius: 8px;
+            cursor: pointer; font-size: 13px; flex: 1;
+        }
+        .wa-btn {
+    padding: 12px; background: #25D366;
+    color: white; border: none; border-radius: 8px;
+    cursor: pointer; font-size: 15px;
+    font-weight: bold; width: 100%; margin-top: 8px;
+}
+.insta-btn {
+    padding: 12px;
+    background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+    color: white; border: none; border-radius: 8px;
+    cursor: pointer; font-size: 15px;
+    font-weight: bold; width: 100%; margin-top: 8px;
+}
+.fb-header { background: #1877f2; }
+
+.fb-btn {
+    padding: 12px;
+    background: #1877f2;
+    color: white; border: none; border-radius: 8px;
+    cursor: pointer; font-size: 15px;
+    font-weight: bold; width: 100%; margin-top: 8px;
+}
+.fb-btn:hover { background: #1560c0; }
+
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>🛒 VendorAI</h1>
+    <p>మీ వ్యాపారానికి డిజిటల్ శక్తి | Your Digital Marketing Assistant</p>
+</div>
+
+<div class="container">
+
+    <!-- LANGUAGE -->
+    <div class="card">
+        <h2>📍 Step 1: Select Language</h2>
+        <select id="language" onchange="updateLang()">
+            <option value="Telugu" data-code="te-IN">తెలుగు (Telugu)</option>
+            <option value="Hindi" data-code="hi-IN">हिंदी (Hindi)</option>
+            <option value="English" data-code="en-US">English</option>
+            <option value="Tamil" data-code="ta-IN">தமிழ் (Tamil)</option>
+            <option value="Kannada" data-code="kn-IN">ಕನ್ನಡ (Kannada)</option>
+        </select>
+    </div>
+    <!-- CATEGORY -->
+<div class="card">
+    <h2>🏷️ Step 2: Select Product Category</h2>
+    <p style="color:#888;font-size:13px;margin-bottom:10px">
+        Selecting category helps AI generate better targeted content
+    </p>
+    <select id="category">
+        <option value="General">🛍️ General / Other</option>
+        <option value="Food and Beverages">🍱 Food & Beverages</option>
+        <option value="Clothing and Fashion">👗 Clothing & Fashion</option>
+        <option value="Jewellery and Accessories">💍 Jewellery & Accessories</option>
+        <option value="Home Decor and Crafts">🏺 Home Decor & Crafts</option>
+        <option value="Plants and Garden">🌿 Plants & Garden</option>
+        <option value="Health and Wellness">💊 Health & Wellness</option>
+        <option value="Beauty and Skincare">💄 Beauty & Skincare</option>
+        <option value="Electronics and Gadgets">📱 Electronics & Gadgets</option>
+        <option value="Toys and Kids">🧸 Toys & Kids</option>
+        <option value="Services">🔧 Services</option>
+        <option value="Agriculture and Farming">🌾 Agriculture & Farming</option>
+    </select>
+</div>
+
+    <!-- VOICE -->
+    <div class="card">
+        <h2>🎙️ Step 3: Describe Your Product</h2>
+        <p class="status" id="micStatus">Tap microphone and speak about your product</p>
+        <button class="mic-btn" id="micBtn" onclick="toggleVoice()">🎙️</button>
+        <div class="transcript-box" id="transcriptBox"></div>
+        <textarea id="textInput" 
+            placeholder="Or type your product description here..."></textarea>
+    </div>
+
+    <!-- PHOTO -->
+    <div class="card">
+        <h2>📸 Step 4: Product Photo (Optional)</h2>
+        <div style="border:2px dashed #2d6a4f; border-radius:10px; 
+                    padding:20px; text-align:center; cursor:pointer"
+             onclick="document.getElementById('photoInput').click()">
+            <input type="file" id="photoInput" accept="image/*" 
+                   style="display:none" onchange="previewPhoto(this)">
+            <p style="color:#2d6a4f">📷 Tap to upload photo</p>
+            <p style="font-size:12px;color:#888;margin-top:4px">
+                Optional — for product image
+            </p>
+        </div>
+        <img id="previewImg" style="width:100%;border-radius:8px;
+             margin-top:12px;display:none"/>
+        <a href="https://remove.bg" target="_blank" 
+           style="display:block;text-align:center;margin-top:8px;
+                  color:#2d6a4f;font-size:13px">
+            Remove background free → remove.bg
+        </a>
+    </div>
+
+    
+<!-- GENERATE -->
+    <button class="gen-btn" id="genBtn" onclick="generate()">
+        ✨ Generate My Marketing Content
+    </button>
+
+    <!-- LOADING -->
+    <div class="spinner-wrap" id="loading">
+        <div class="card">
+            <div class="spinner"></div>
+            <p id="loadingText" style="color:#666">
+                🤖 AI is generating your content...
+            </p>
+        </div>
+    </div>
+
+    <!-- RESULTS — hidden until generated -->
+    <div id="results" style="display:none">
+
+        <div class="success-banner">✅ Your content is ready!</div>
+
+        <!-- Product Info -->
+        <div class="result-card">
+            <h3 class="green-header">🏷️ Product Info</h3>
+            <div class="result-label">Product Name & Price</div>
+            <div class="result-box" id="r-name"></div>
+            <div class="result-label">Key Features</div>
+            <div class="result-box" id="r-features"></div>
+        </div>
+
+        <!-- Listing -->
+        <div class="result-card">
+            <h3 class="blue-header">📦 Product Listing</h3>
+            <div class="result-box" id="r-listing"></div>
+            <div class="btn-row">
+                <button class="copy-btn"
+                    onclick="copyText('r-listing', this)">
+                    📋 Copy Listing
+                </button>
+            </div>
+        </div>
+
+        <!-- Instagram -->
+        <div class="result-card">
+            <h3 class="purple-header">📱 Instagram</h3>
+            <div class="result-label">Caption</div>
+            <div class="result-box" id="r-caption"></div>
+            <div class="result-label">Hashtags</div>
+            <div class="result-box hashtag-box" id="r-hashtags"></div>
+            <div class="btn-row">
+                <button class="copy-btn"
+                    onclick="copyText('r-caption', this)">
+                    📋 Caption
+                </button>
+                <button class="copy-btn"
+                    onclick="copyText('r-hashtags', this)">
+                    📋 Hashtags
+                </button>
+                <button class="copy-btn"
+                    onclick="copyBoth(this)">
+                    📋 Both
+                </button>
+            </div>
+            <button class="insta-btn" onclick="shareInstagram()">
+                📸 Share on Instagram
+            </button>
+        </div>
+
+        <!-- WhatsApp -->
+        <div class="result-card">
+            <h3 class="green-header">💬 WhatsApp</h3>
+            <div class="result-box" id="r-whatsapp"></div>
+            <div class="btn-row">
+                <button class="copy-btn"
+                    onclick="copyText('r-whatsapp', this)">
+                    📋 Copy
+                </button>
+            </div>
+            <button class="wa-btn" onclick="shareWA()">
+                📲 Share on WhatsApp
+            </button>
+        </div>
+
+        <!-- Facebook -->
+        <div class="result-card">
+            <h3 class="fb-header">📘 Facebook Post</h3>
+            <div class="result-label">Facebook Post Content</div>
+            <div class="result-box" id="r-facebook"></div>
+            <div class="btn-row">
+                <button class="copy-btn"
+                    onclick="copyText('r-facebook', this)">
+                    📋 Copy Post
+                </button>
+            </div>
+            <button class="fb-btn" onclick="shareFacebook()">
+                📘 Share on Facebook
+            </button>
+        </div>
+
+        <!-- Reset -->
+        <button class="reset-btn" onclick="resetForm()">
+            🔄 Create Another Product
+        </button>
+
+    </div>
+    <!-- END RESULTS -->
+
+</div>
+<!-- END CONTAINER -->
+<div class="toast" id="toast"></div>
+
+<script>
+let recognition = null;
+let isListening = false;
+let transcript = '';
+let langCode = 'te-IN';
+window.onload = function(){
+    document.getElementById("results").style.display = "none";
+}
+function updateLang() {
+    const sel = document.getElementById('language');
+    const opt = sel.options[sel.selectedIndex];
+    langCode = opt.getAttribute('data-code');
+}
+
+function toggleVoice() {
+    const SpeechRecognition = window.SpeechRecognition 
+        || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+        showToast('Voice not supported in this browser. Please type instead.', 'error');
+        return;
+    }
+
+    if (!isListening) {
+        recognition = new SpeechRecognition();
+        recognition.lang = langCode;
+        recognition.continuous = false;
+        recognition.interimResults = false;
+
+        recognition.onstart = () => {
+            isListening = true;
+            document.getElementById('micBtn').classList.add('listening');
+            document.getElementById('micBtn').textContent = '⏹️';
+            document.getElementById('micStatus').textContent = 
+                '🔴 Listening... speak now! Tap to stop.';
+        };
+
+        recognition.onresult = (event) => {
+            transcript = event.results[0][0].transcript;
+            document.getElementById('transcriptBox').textContent = 
+                '🎙️ Heard: ' + transcript;
+            document.getElementById('transcriptBox').style.display = 'block';
+            document.getElementById('textInput').value = transcript;
+        };
+
+        recognition.onerror = () => {
+            showToast('Could not hear clearly. Please type instead.', 'error');
+            stopListening();
+        };
+
+        recognition.onend = () => { stopListening(); };
+
+        recognition.start();
+    } else {
+        recognition.stop();
+        stopListening();
+    }
+}
+
+function stopListening() {
+    isListening = false;
+    document.getElementById('micBtn').classList.remove('listening');
+    document.getElementById('micBtn').textContent = '🎙️';
+    document.getElementById('micStatus').textContent = 
+        '✅ Done! Click Generate below.';
+}
+
+function previewPhoto(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            const img = document.getElementById('previewImg');
+            img.src = e.target.result;
+            img.style.display = 'block';
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+async function generate() {
+    const userInput = document.getElementById('textInput').value.trim();
+    const language = document.getElementById('language').value;
+    const category = document.getElementById('category').value;
+
+    if (!userInput) {
+        showToast('Please describe your product first!', 'error');
+        return;
+    }
+
+    // Show loading, hide results
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('results').style.display = 'none';
+    document.getElementById('genBtn').disabled = true;
+
+    try {
+        const response = await fetch('/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user_input: userInput,
+                language: language,
+                category: category
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // Hide loading first
+            document.getElementById('loading').style.display = 'none';
+            // Then show results
+            showResults(result.data);
+        } else {
+            showToast('Something went wrong. Try again.', 'error');
+            document.getElementById('loading').style.display = 'none';
+        }
+
+    } catch (e) {
+        showToast('Cannot reach server. Make sure app.py is running!', 'error');
+        document.getElementById('loading').style.display = 'none';
+    } finally {
+        document.getElementById('genBtn').disabled = false;
+    }
+}
+
+function showResults(d) {
+    // Fill all content
+    document.getElementById('r-name').textContent = 
+        (d.product_name || 'Product') + '  —  ' + (d.price || 'Contact for price');
+    document.getElementById('r-features').textContent = d.key_features || '';
+    document.getElementById('r-listing').textContent = d.product_listing || '';
+    document.getElementById('r-caption').textContent = d.instagram_caption || '';
+    document.getElementById('r-hashtags').textContent = d.hashtags || '';
+    document.getElementById('r-whatsapp').textContent = d.whatsapp_message || '';
+    document.getElementById('r-facebook').textContent = 
+        d.facebook_post || d.product_listing + '\n\n' + d.instagram_caption || '';
+
+    // Show results div
+    const results = document.getElementById('results');
+    results.style.display = 'block';
+    results.style.opacity = '1';
+
+    // Scroll to results
+    setTimeout(() => {
+        results.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+}
+
+function copyText(id, btn) {
+    const text = document.getElementById(id).textContent;
+    navigator.clipboard.writeText(text).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = '✅ Copied!';
+        setTimeout(() => btn.textContent = orig, 2000);
+    });
+}
+
+function copyBoth(btn) {
+    const text = document.getElementById('r-caption').textContent 
+        + '\n\n' + document.getElementById('r-hashtags').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = '✅ Copied!';
+        setTimeout(() => btn.textContent = orig, 2000);
+    });
+}
+
+function shareWA() {
+    const msg = document.getElementById('r-whatsapp').textContent;
+    window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+}
+function shareInstagram() {
+    // Copy caption + hashtags to clipboard
+    const caption = document.getElementById('r-caption').textContent;
+    const hashtags = document.getElementById('r-hashtags').textContent;
+    const fullText = caption + '\n\n' + hashtags;
+    
+    navigator.clipboard.writeText(fullText).then(() => {
+        // Show instruction toast
+        showToast('✅ Caption copied! Opening Instagram — just paste it in your post', 'success');
+        // Open Instagram after short delay
+        setTimeout(() => {
+            window.open('https://www.instagram.com/', '_blank');
+        }, 1500);
+    });
+}
+function shareFacebook() {
+    const post = document.getElementById('r-facebook').textContent;
+    
+    navigator.clipboard.writeText(post).then(() => {
+        showToast('✅ Post copied! Opening Facebook — paste it in your post', 'success');
+        setTimeout(() => {
+            window.open('https://www.facebook.com/', '_blank');
+        }, 1500);
+    });
+}
+
+function resetForm() {
+
+    document.getElementById('textInput').value = '';
+    document.getElementById('transcriptBox').style.display = 'none';
+    document.getElementById('previewImg').style.display = 'none';
+
+    const results = document.getElementById('results');
+    results.style.display = 'none';
+    results.style.opacity = '0';
+
+    document.getElementById('micStatus').textContent =
+        'Tap microphone and speak about your product';
+
+    transcript = '';
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function showToast(msg, type) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.className = 'toast ' + type;
+    toast.style.display = 'block';
+    setTimeout(() => toast.style.display = 'none', 3000);
+}
+</script>
+</body>
+</html>
+
+

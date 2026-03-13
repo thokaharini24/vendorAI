@@ -416,7 +416,23 @@ Return plain text only in {language}. No extra explanation."""
 def index():
     return send_from_directory('static', 'index.html')
 
+import threading
+
+def keep_alive():
+    while True:
+        try:
+            requests.get(
+                "https://vendorai-at00.onrender.com/ping",
+                timeout=10
+            )
+            print(">>> Keep alive ping sent")
+        except:
+            pass
+        time.sleep(840)  # ping every 14 minutes
 
 if __name__ == '__main__':
     print("🚀 VendorAI running at http://localhost:5000")
+    keep_alive_thread = threading.Thread(target=keep_alive)
+    keep_alive_thread.daemon = True
+    keep_alive_thread.start()
     app.run(debug=True, port=5000)

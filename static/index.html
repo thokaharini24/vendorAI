@@ -376,46 +376,85 @@ function updateLang() {
 }
 
 function toggleVoice() {
+    // Check browser support
     const SpeechRecognition = window.SpeechRecognition 
         || window.webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-        showToast('Voice not supported in this browser. Please type instead.', 'error');
+        showToast('❌ Voice not supported. Please use Chrome browser.', 'error');
+        return;
+    }
+
+    // Check if HTTPS or localhost
+    const isSecure = location.protocol === 'https:' 
+        || location.hostname === 'localhost' 
+        || location.hostname === '127.0.0.1';
+    
+    if (!isSecure) {
+        showToast('❌ Voice needs HTTPS. Please use the Render link.', 'error');
         return;
     }
 
     if (!isListening) {
-        recognition = new SpeechRecognition();
-        recognition.lang = langCode;
-        recognition.continuous = false;
-        recognition.interimResults = false;
+        // Request microphone permission first
+        navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+            // Stop the stream immediately — just needed for permission
+            stream.getTracks().forEach(track => track.stop());
+            
+            // Now start recognition
+            recognition = new SpeechRecognition();
+            recognition.lang = langCode;
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
 
-        recognition.onstart = () => {
-            isListening = true;
-            document.getElementById('micBtn').classList.add('listening');
-            document.getElementById('micBtn').textContent = '⏹️';
-            document.getElementById('micStatus').textContent = 
-                '🔴 Listening... speak now! Tap to stop.';
-        };
+            recognition.onstart = () => {
+                isListening = true;
+                document.getElementById('micBtn').classList.add('listening');
+                document.getElementById('micBtn').textContent = '⏹️';
+                document.getElementById('micStatus').textContent = 
+                    '🔴 Listening... speak now! Tap to stop.';
+            };
 
-        recognition.onresult = (event) => {
-            transcript = event.results[0][0].transcript;
-            document.getElementById('transcriptBox').textContent = 
-                '🎙️ Heard: ' + transcript;
-            document.getElementById('transcriptBox').style.display = 'block';
-            document.getElementById('textInput').value = transcript;
-        };
+            recognition.onresult = (event) => {
+                transcript = event.results[0][0].transcript;
+                console.log('Heard:', transcript);
+                document.getElementById('transcriptBox').textContent = 
+                    '🎙️ Heard: ' + transcript;
+                document.getElementById('transcriptBox').style.display = 'block';
+                document.getElementById('textInput').value = transcript;
+                document.getElementById('micStatus').textContent = 
+                    '✅ Done! Click Generate below.';
+            };
 
-        recognition.onerror = () => {
-            showToast('Could not hear clearly. Please type instead.', 'error');
-            stopListening();
-        };
+            recognition.onerror = (event) => {
+                console.error('Speech error:', event.error);
+                if (event.error === 'no-speech') {
+                    showToast('No speech detected. Please try again.', 'error');
+                } else if (event.error === 'not-allowed') {
+                    showToast('❌ Microphone blocked. Allow mic in browser settings.', 'error');
+                } else if (event.error === 'network') {
+                    showToast('❌ Network error. Check internet connection.', 'error');
+                } else {
+                    showToast('Could not hear. Please type instead.', 'error');
+                }
+                stopListening();
+            };
 
-        recognition.onend = () => { stopListening(); };
+            recognition.onend = () => {
+                stopListening();
+            };
 
-        recognition.start();
+            recognition.start();
+        })
+        .catch(err => {
+            console.error('Mic permission error:', err);
+            showToast('❌ Microphone access denied. Click the 🔒 icon in address bar and allow microphone.', 'error');
+        });
+
     } else {
-        recognition.stop();
+        if (recognition) recognition.stop();
         stopListening();
     }
 }
